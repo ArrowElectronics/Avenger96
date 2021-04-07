@@ -4,8 +4,13 @@ Usage:
 ```
 ./xml2bin.py [.XML input] > [binary output file]
 ```
+<br/>
+
 For the AR0430 image sensor this translates to:
 ```
 ./xml2bin.py AR0430_Headboard.xml > on_ar0430_headboard.bin
 ```
-
+For the AR1337 image sensor:
+```
+./xml2bin.py guido_patch_290520_01.xml > on_ar1337_cdaf_dw9718.290520_01.bin
+```
