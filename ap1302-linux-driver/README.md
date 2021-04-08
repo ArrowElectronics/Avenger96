@@ -103,7 +103,7 @@ AP1302 *debug console* feature is documented in *AN9431/D - AP1302 Developer gui
 <br/>
 
 #####  ap1302_trace_log
-*ap1302_trace_log*  will be called regularly by *ap1302_fw_loop* during firmware download. It reads the new state of the 512-byte rolling buffer, compares it with the previous state and tries to figure out what new messages were written by the AP1302 firmware. As the rolling buffer gets overwritten in the background by the firmware *ap1302_trace_log* may not always find the starting end ending point of new messages inside the buffer. But most of the time it prints acceptable results in the kernel log.
+If AP1302 *debug console* is enabled *ap1302_trace_log*  will be called regularly by *ap1302_fw_loop* during firmware download. It reads the new state of the 512-byte rolling buffer, compares it with the previous state and tries to figure out what new messages were written by the AP1302 firmware. As the rolling buffer gets overwritten in the background by the firmware *ap1302_trace_log* may not always find the starting end ending point of new messages inside the buffer. But most of the time it prints acceptable results in the kernel log.
 
 <br/>
 
@@ -123,18 +123,21 @@ Current PLL settings can be found in *ap1302_fw_pll_320M[]* array. These values 
 
 ####  Supported modes
 Supported modes (frame sizes) are stored in *ap1302_mode_data* array. Modes will be reported to V4L2 subsystem during subsequent calls to *ap1302_enum_frame_size*. Currently supported modes:
+
 &nbsp;&nbsp;&nbsp;&nbsp;320 x 240, 640 x 480, 1024 x 576, 1280 x 720, 1920 x 1080, 4160 x 3120
 
 <br/>
 
 ####  Supported formats
 Supported media formats are stored in *ap1302_formats* array. Formats will be reported to V4L2 subsystem during subsequent calls to *ap1302_try_fmt_internal*. Currently supported formats:
+
 &nbsp;&nbsp;&nbsp;&nbsp;MEDIA_BUS_FMT_RGB565_2X8_LE, MEDIA_BUS_FMT_YUYV8_2X8
 
 <br/>
 
 ####  Supported controls
 The driver supports currently the following controls:
+
 &nbsp;&nbsp;&nbsp;&nbsp;test pattern, horizontal flip, vertical flip, link frequency, auto/manual exposure, manual exposure value.
 These controls will be registered by *ap1302_init_controls* during driver initialization. Because of calibration issues of the AR1337 firmware auto exposure is turned off by default and an experimental manual exposure value is used. Auto exposure can be turned on again by
 ```
