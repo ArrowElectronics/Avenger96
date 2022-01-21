@@ -1,0 +1,130 @@
+From 579806411eae4e6ec1819b0131ece6372f5bda82 Mon Sep 17 00:00:00 2001
+From: Anil Dsouza <anil.dsouza@einfochips.com>
+Date: Mon, 10 Jan 2022 13:57:26 +0530
+Subject: [PATCH 1/5] arch: arm: boot: dts: Add support DT binding node for
+ AP1302 in Avenger96
+
+DTS support for ap1302 camera ISP driver compatible with Avenger96
+Board is added.
+
+Change-Id: I8147a3a81f3218e3a287b7d371e5f48435db63cd
+Signed-off-by: Anil Dsouza <anil.dsouza@einfochips.com>
+---
+ .../boot/dts/stm32mp15xx-dhcor-avenger96.dtsi | 64 +++++++++++++++++--
+ 1 file changed, 60 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/stm32mp15xx-dhcor-avenger96.dtsi b/arch/arm/boot/dts/stm32mp15xx-dhcor-avenger96.dtsi
+index 421040fdf..f2a001296 100644
+--- a/arch/arm/boot/dts/stm32mp15xx-dhcor-avenger96.dtsi
++++ b/arch/arm/boot/dts/stm32mp15xx-dhcor-avenger96.dtsi
+@@ -103,6 +103,27 @@
+ 		gpios = <&gpioz 3 GPIO_ACTIVE_HIGH>;
+ 		enable-active-high;
+ 	};
++
++	sram@10050000 {
++               compatible = "mmio-sram";
++               reg = <0x10050000 0x10000>;
++               #address-cells = <1>;
++               #size-cells = <1>;
++               ranges = <0 0x10050000 0x10000>;
++
++               dma_pool: dma_pool@0 {
++                       reg = <0x0 0x10000>;
++                       pool;
++               };
++       };
++};
++
++&dma1 {
++       sram = <&dma_pool>;
++};
++
++&dma2 {
++       sram = <&dma_pool>;
+ };
+ 
+ &adc {
+@@ -111,18 +132,18 @@
+ 	vdd-supply = <&vdd>;
+ 	vdda-supply = <&vdda>;
+ 	vref-supply = <&vdda>;
+-	status = "okay";
++	status = "disabled";
+ 
+ 	adc1: adc@0 {
+ 		st,adc-channels = <0 1 6>;
+ 		st,min-sample-time-nsecs = <5000>;
+-		status = "okay";
++		status = "disabled";
+ 	};
+ 
+ 	adc2: adc@100 {
+ 		st,adc-channels = <0 1 2>;
+ 		st,min-sample-time-nsecs = <5000>;
+-		status = "okay";
++		status = "disabled";
+ 	};
+ };
+ 
+@@ -232,6 +253,39 @@
+ 	status = "okay";
+ 	/delete-property/dmas;
+ 	/delete-property/dma-names;
++	ap1302: camera@3d {
++            compatible = "on,ap1302";
++            reg = <0x3d>;
++            pinctrl-names = "default", "sleep";
++            pinctrl-0 = <&rcc_pins_a>;
++            pinctrl-1 = <&rcc_sleep_pins_a>;
++            clocks = <&rcc CK_MCO1>;
++            clock-names = "xclk";
++            assigned-clocks = <&rcc CK_MCO1>;
++            assigned-clock-rates = <24000000>;
++            reset-gpios = <&gpioc 3 GPIO_ACTIVE_LOW>;
++            standby-gpios = <&gpiod 14 GPIO_ACTIVE_HIGH>;
++            i2csel-gpios = <&gpiof 12 GPIO_ACTIVE_HIGH>;
++            isptrig-gpios = <&gpioa 12 GPIO_ACTIVE_HIGH>;
++            status = "okay";
++
++	    port {
++                    ap1302_0: endpoint {
++                            remote-endpoint = <&stmipi_0>;
++                            data-lanes = <1 2>;
++                    };
++            };
++
++	    sensors {
++                #address-cells = <1>;
++                #size-cells = <0>;
++		onnn,model = "onnn,ar0430";
++                    sensor@0 {
++                        reg = <0>;
++                   };
++            };
++      };
++
+ };
+ 
+ &i2c4 {
+@@ -246,7 +300,7 @@
+ 		VDDE-supply = <&v1v8>;
+ 		VDDIN-supply = <&v1v8>;
+ 		reset-gpios = <&gpioz 0 GPIO_ACTIVE_LOW>;
+-		status = "disabled";
++		status = "okay";
+ 
+ 		ports {
+ 			#address-cells = <1>;
+@@ -255,6 +309,8 @@
+ 			port@0 {
+ 				reg = <0>;
+ 				stmipi_0: endpoint {
++				data-lanes = <1 2>;
++				remote-endpoint = <&ap1302_0>;
+ 				};
+ 			};
+ 
+-- 
+2.17.1
+
