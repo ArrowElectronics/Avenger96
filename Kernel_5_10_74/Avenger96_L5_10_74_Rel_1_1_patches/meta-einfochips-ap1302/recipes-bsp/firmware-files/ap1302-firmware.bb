@@ -8,6 +8,7 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
 SRC_URI += "file://lib/firmware/ap1302_ar0430_fw.bin"
+SRC_URI += "file://lib/firmware/ap1302_arx3a0_fw.bin"
 
 do_install() {
     install -d ${D}${base_libdir}/firmware/
@@ -15,4 +16,4 @@ do_install() {
 }
 
 FILES_${PN} += "${base_libdir}/firmware/ap1302_ar0430_fw.bin"
-
+FILES_${PN} += "${base_libdir}/firmware/ap1302_arx3a0_fw.bin"

@@ -147,12 +147,12 @@ apply_patch()
 	
 	if [ ! -d meta-einfochips-ap1302 ]
 	then
-		cp -r $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_0_patches/meta-einfochips-ap1302/ .
+		cp -r $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_1_patches/meta-einfochips-ap1302/ .
 		if [ $? -ne 0 ]
 		then
 			echo "###################################################################################"
 			echo "${red}Error during apply the patch in meta-einfochips-ap1302"
-			echo "Please verify Avenger96_L5_10_74_Rel_1_0_patches directory${reset}"
+			echo "Please verify Avenger96_L5_10_74_Rel_1_1_patches directory${reset}"
 			echo "###################################################################################"
 			exit 1
 		fi
@@ -160,19 +160,19 @@ apply_patch()
 
 	# Apply patche 2
 	cd $SOURCE_DIR/meta-dhsom-stm32-common/
-	git apply --check -R $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_0_patches/meta-dhsom-stm32-common-patches/00* 2>/dev/null
+	git apply --check -R $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_1_patches/meta-dhsom-stm32-common-patches/00* 2>/dev/null
 	if [ $? -ne 0 ]
 	then
 		echo "###################################################################################"
 		echo "Apply the patch in meta-dhsom-stm32-common"
 		echo "###################################################################################"
 		git checkout -f $meta_dhsom_stm32_common_head
-		git am --whitespace=fix $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_0_patches/meta-dhsom-stm32-common-patches/00*
+		git am --whitespace=fix $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_1_patches/meta-dhsom-stm32-common-patches/00*
 		if [ $? -ne 0 ]
 		then
 			echo "###################################################################################"
 			echo "${red}Error during apply the patch in meta-dhsom-stm32-common"
-			echo "Please verify Avenger96_L5_10_74_Rel_1_0_patches directory${reset}"
+			echo "Please verify Avenger96_L5_10_74_Rel_1_1_patches directory${reset}"
 			echo "###################################################################################"
 			git format-patch $meta_dhsom_stm32_common_head
 			exit 1
@@ -181,19 +181,19 @@ apply_patch()
 
 	#Apply patch 3
 	cd $SOURCE_DIR/meta-dhsom-stm32-bsp/
-	git apply --check -R $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_0_patches/meta-dhsom-stm32-bsp-patches/00* 2>/dev/null
+	git apply --check -R $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_1_patches/meta-dhsom-stm32-bsp-patches/00* 2>/dev/null
 	if [ $? -ne 0 ]
 	then
 		echo "###################################################################################"
 		echo "Apply the patch in meta-dhsom-stm32-common"
 		echo "###################################################################################"
 		git checkout -f $meta_dhsom_stm32_bsp_head
-		git am --whitespace=fix $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_0_patches/meta-dhsom-stm32-bsp-patches/00*
+		git am --whitespace=fix $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_1_patches/meta-dhsom-stm32-bsp-patches/00*
 		if [ $? -ne 0 ]
 		then
 			echo "###################################################################################"
 			echo "${red}Error during apply the patch in meta-dhsom-stm32-bsp"
-			echo "Please verify Avenger96_L5_10_74_Rel_1_0_patches directory${reset}"
+			echo "Please verify Avenger96_L5_10_74_Rel_1_1_patches directory${reset}"
 			echo "###################################################################################"
 			git format-patch $meta_dhsom_stm32_bsp_head
 			exit 1
