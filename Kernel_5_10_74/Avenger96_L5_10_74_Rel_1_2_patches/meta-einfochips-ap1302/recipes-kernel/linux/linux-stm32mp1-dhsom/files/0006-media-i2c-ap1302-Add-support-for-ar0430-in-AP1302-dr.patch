@@ -1,7 +1,7 @@
-From fa8de3ab23422d73e32b9119eacfcbe71746a398 Mon Sep 17 00:00:00 2001
+From abcc18db34bcc8e5be2c71e7cc9504ef795dfc94 Mon Sep 17 00:00:00 2001
 From: Anil Dsouza <anil.dsouza@einfochips.com>
 Date: Mon, 10 Jan 2022 14:09:26 +0530
-Subject: [PATCH 2/5] media:i2c: ap1302: Add support for ar0430 in AP1302
+Subject: [PATCH 06/11] media:i2c: ap1302: Add support for ar0430 in AP1302
  driver
 
 This patch adds support for AR0430 in AP1302. This patch also updates

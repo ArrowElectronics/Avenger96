@@ -16,18 +16,6 @@ green=`tput setaf 2`
 bold=`tput bold`
 reset=`tput sgr0`
 
-#following commit head is checkedout for the repos before applying patches 
-meta_poky_head=0839888394a6e42e96f9f0d201376eb38bc79b24
-meta_dhsom_extras_head=47fef5536eb0dc2c806fe416d6fe5ff7ccae7126
-meta_dhsom_stm32_bsp_head=7dc64e45d69ec15e3f71246c99da0595ea29a7fa
-meta_dhsom_stm32_common_head=49bb5d15e6294ac24fe362713e2145535e11976b
-meta_mainline_common_head=985fbd430da9219ae4524060fae3f40909f44713
-meta_mainline_graphics_head=5cdafcd9929e9b1534063efe3bff1a98b8df84ab
-meta_openembedded_head=7889158dcd187546fc5e99fd81d0779cad3e8d17
-meta_python2_head=b901080cf57d9a7f5476ab4d96e56c30db8170a8
-meta_qt5_head=b4d24d70aca75791902df5cd59a4f4a54aa4a125
-meta_swupdate_head=9659220cee3964322ae387f04e47bb3674b37f7c
-
 # Required packages to build
 # Install all the required build HOST packages
 prerequisite()
@@ -108,51 +96,17 @@ download_dhcom_repo()
 # Apply patches
 apply_patch()
 {	
-	#Checkout all the repos with commit head 
-	cd $SOURCE_DIR/poky/
-	git checkout -f $meta_poky_head
-
-	cd $SOURCE_DIR/meta-dhsom-extras/
-    git checkout -f $meta_dhsom_extras_head
-
-	cd $SOURCE_DIR/meta-dhsom-stm32-bsp/
-    git checkout -f $meta_dhsom_stm32_bsp_head
-
-	cd $SOURCE_DIR/meta-dhsom-extras/
-    git checkout -f $meta_dhsom_extras_head
-
-	cd $SOURCE_DIR/meta-dhsom-stm32-common/
-    git checkout -f $meta_dhsom_stm32_common_head
-
-	cd $SOURCE_DIR/meta-mainline-common/
-    git checkout -f $meta_mainline_common_head
-
-	cd $SOURCE_DIR/meta-mainline-graphics/
-    git checkout -f $meta_mainline_graphics_head
-
-	cd $SOURCE_DIR/meta-openembedded/
-    git checkout -f $meta_openembedded_head
-
-	cd $SOURCE_DIR/meta-python2/
-    git checkout -f $meta_python2_head
-
-	cd $SOURCE_DIR/meta-qt5/
-    git checkout -f $meta_qt5_head
-
-	cd $SOURCE_DIR/meta-swupdate/
-    git checkout -f $meta_swupdate_head
-
 	# Apply patch 1
 	cd $SOURCE_DIR
 	
 	if [ ! -d meta-einfochips-ap1302 ]
 	then
-		cp -r $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_1_patches/meta-einfochips-ap1302/ .
+		cp -r $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_2_patches/meta-einfochips-ap1302/ .
 		if [ $? -ne 0 ]
 		then
 			echo "###################################################################################"
 			echo "${red}Error during apply the patch in meta-einfochips-ap1302"
-			echo "Please verify Avenger96_L5_10_74_Rel_1_1_patches directory${reset}"
+			echo "Please verify Avenger96_L5_10_74_Rel_1_2_patches directory${reset}"
 			echo "###################################################################################"
 			exit 1
 		fi
@@ -160,19 +114,19 @@ apply_patch()
 
 	# Apply patche 2
 	cd $SOURCE_DIR/meta-dhsom-stm32-common/
-	git apply --check -R $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_1_patches/meta-dhsom-stm32-common-patches/00* 2>/dev/null
+	git apply --check -R $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_2_patches/meta-dhsom-stm32-common-patches/00* 2>/dev/null
 	if [ $? -ne 0 ]
 	then
 		echo "###################################################################################"
 		echo "Apply the patch in meta-dhsom-stm32-common"
 		echo "###################################################################################"
 		git checkout -f $meta_dhsom_stm32_common_head
-		git am --whitespace=fix $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_1_patches/meta-dhsom-stm32-common-patches/00*
+		git am --whitespace=fix $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_2_patches/meta-dhsom-stm32-common-patches/00*
 		if [ $? -ne 0 ]
 		then
 			echo "###################################################################################"
 			echo "${red}Error during apply the patch in meta-dhsom-stm32-common"
-			echo "Please verify Avenger96_L5_10_74_Rel_1_1_patches directory${reset}"
+			echo "Please verify Avenger96_L5_10_74_Rel_1_2_patches directory${reset}"
 			echo "###################################################################################"
 			git format-patch $meta_dhsom_stm32_common_head
 			exit 1
@@ -181,19 +135,19 @@ apply_patch()
 
 	#Apply patch 3
 	cd $SOURCE_DIR/meta-dhsom-stm32-bsp/
-	git apply --check -R $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_1_patches/meta-dhsom-stm32-bsp-patches/00* 2>/dev/null
+	git apply --check -R $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_2_patches/meta-dhsom-stm32-bsp-patches/00* 2>/dev/null
 	if [ $? -ne 0 ]
 	then
 		echo "###################################################################################"
 		echo "Apply the patch in meta-dhsom-stm32-common"
 		echo "###################################################################################"
 		git checkout -f $meta_dhsom_stm32_bsp_head
-		git am --whitespace=fix $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_1_patches/meta-dhsom-stm32-bsp-patches/00*
+		git am --whitespace=fix $YOCTO_DIR/Avenger96_L5_10_74_Rel_1_2_patches/meta-dhsom-stm32-bsp-patches/00*
 		if [ $? -ne 0 ]
 		then
 			echo "###################################################################################"
 			echo "${red}Error during apply the patch in meta-dhsom-stm32-bsp"
-			echo "Please verify Avenger96_L5_10_74_Rel_1_1_patches directory${reset}"
+			echo "Please verify Avenger96_L5_10_74_Rel_1_2_patches directory${reset}"
 			echo "###################################################################################"
 			git format-patch $meta_dhsom_stm32_bsp_head
 			exit 1

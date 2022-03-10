@@ -1,15 +1,17 @@
-From 05de47a6600fc82f9f9cb9228934ddb2dd50fa9a Mon Sep 17 00:00:00 2001
+From 6072058a74301a0aab9dfa7b5c7c3986cfbeb85d Mon Sep 17 00:00:00 2001
 From: Anil Kumar Mamidala <anil.mamidala@xilinx.com>
 Date: Tue, 16 Nov 2021 17:23:21 +0530
-Subject: [PATCH 4/4] media: dt-bindings: media: i2c: Add bindings for AP1302
+Subject: [PATCH 04/11] media: dt-bindings: media: i2c: Add bindings for AP1302
 
 The AP1302 is a standalone ISP for ON Semiconductor sensors.
 Add corresponding DT bindings.
 
+Change-Id: I23fd22c92ce01d60c68a078bb553a88feafb455b
 Signed-off-by: Anil Kumar Mamidala <anil.mamidala@xilinx.com>
 Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Signed-off-by: Stefan Hladnik <stefan.hladnik@gmail.com>
 Signed-off-by: Florian Rebaudo <frebaudo@witekio.com>
+Signed-off-by: Anil Dsouza <anil.dsouza@einfochips.com>
 ---
  .../bindings/media/i2c/onnn,ap1302.yaml       | 202 ++++++++++++++++++
  1 file changed, 202 insertions(+)
@@ -17,7 +19,7 @@ Signed-off-by: Florian Rebaudo <frebaudo@witekio.com>
 
 diff --git a/Documentation/devicetree/bindings/media/i2c/onnn,ap1302.yaml b/Documentation/devicetree/bindings/media/i2c/onnn,ap1302.yaml
 new file mode 100644
-index 000000000000..d96e9dbb5bcd
+index 000000000..d96e9dbb5
 --- /dev/null
 +++ b/Documentation/devicetree/bindings/media/i2c/onnn,ap1302.yaml
 @@ -0,0 +1,202 @@

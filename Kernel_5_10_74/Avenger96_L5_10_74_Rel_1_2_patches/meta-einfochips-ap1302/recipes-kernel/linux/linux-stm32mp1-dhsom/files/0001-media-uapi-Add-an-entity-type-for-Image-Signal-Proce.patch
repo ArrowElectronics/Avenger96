@@ -1,7 +1,7 @@
-From fa6ff8d80520af9a7d9fb9eac090189402da7cb6 Mon Sep 17 00:00:00 2001
+From 21cb3b814ccea199d14671d3f83850747ba6127c Mon Sep 17 00:00:00 2001
 From: Sakari Ailus <sakari.ailus@linux.intel.com>
 Date: Thu, 17 Dec 2020 19:27:08 +0100
-Subject: [PATCH 1/4] media: uapi: Add an entity type for Image Signal
+Subject: [PATCH 01/11] media: uapi: Add an entity type for Image Signal
  Processors
 
 Add and document a media entity type for Image Signal Processor devices.
@@ -9,16 +9,18 @@ Surprisingly we didn't have one, so add one now. More or less all ISP
 drivers should use this type instead of what they currently are using (or
 not using anything).
 
+Change-Id: Iabecec17d6c77aa7318566173c9a59501901c464
 Signed-off-by: Sakari Ailus <sakari.ailus@linux.intel.com>
 Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab+huawei@kernel.org>
+Signed-off-by: Anil Dsouza <anil.dsouza@einfochips.com>
 ---
  Documentation/userspace-api/media/mediactl/media-types.rst | 7 +++++++
  include/uapi/linux/media.h                                 | 1 +
  2 files changed, 8 insertions(+)
 
 diff --git a/Documentation/userspace-api/media/mediactl/media-types.rst b/Documentation/userspace-api/media/mediactl/media-types.rst
-index 7b24a213cae7..e1e4043b3b1c 100644
+index 7b24a213c..e1e4043b3 100644
 --- a/Documentation/userspace-api/media/mediactl/media-types.rst
 +++ b/Documentation/userspace-api/media/mediactl/media-types.rst
 @@ -39,6 +39,7 @@ Types and flags used to represent the media graph elements
@@ -43,7 +45,7 @@ index 7b24a213cae7..e1e4043b3b1c 100644
         - Video multiplexer. An entity capable of multiplexing must have at
           least two sink pads and one source pad, and must pass the video
 diff --git a/include/uapi/linux/media.h b/include/uapi/linux/media.h
-index 383ac7b7d8f0..200fa8462b90 100644
+index 383ac7b7d..200fa8462 100644
 --- a/include/uapi/linux/media.h
 +++ b/include/uapi/linux/media.h
 @@ -127,6 +127,7 @@ struct media_device_info {

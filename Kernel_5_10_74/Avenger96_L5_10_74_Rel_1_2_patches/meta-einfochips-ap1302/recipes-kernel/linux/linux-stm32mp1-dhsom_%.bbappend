@@ -8,8 +8,7 @@ SRC_URI += " \
 	file://0005-arch-arm-boot-dts-Added-dts-overlay-support-for-ap13.patch \
 	file://0006-media-i2c-ap1302-Add-support-for-ar0430-in-AP1302-dr.patch \
 	file://0007-arch-arm-configs-Enable-AP1302-by-default-for-AV96.patch \
-	file://0008-media-i2c-ap1302-Removed-the-unused-control-features.patch \
-	file://0009-arch-arm-config-Increased-the-size-of-CMA.patch \
-	file://0010-media-i2c-ap1320-Removed-few-more-unused-AP1302-cont.patch \
-	file://0011-media-i2c-ap1320-Performance-improvement-for-ar0430-.patch \
-	file://0012-media-i2c-ap1320-Add-support-for-arx3a0-sensor-in-ap.patch"
+	file://0008-media-i2c-ap1302-Removed-the-unused-ISP-control-feat.patch \
+	file://0009-media-i2c-ap1320-Add-support-for-arx3a0-sensor-in-ap.patch \
+	file://0010-media-i2c-ap1302-Added-support-for-multiple-media-bu.patch \
+	file://0011-media-i2c-ap1302-Set-v4l2-ISP-controls-default-value.patch"

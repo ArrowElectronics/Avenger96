@@ -1,7 +1,7 @@
-From b3cf864414a33e995ce34fb5db97359a16b06dac Mon Sep 17 00:00:00 2001
+From 5beb73345026eb7ad211ea94517467d450efd88a Mon Sep 17 00:00:00 2001
 From: Anil Dsouza <anil.dsouza@einfochips.com>
 Date: Fri, 11 Feb 2022 16:59:09 +0530
-Subject: [PATCH 3/4] arch: arm: boot: dts: Added dts overlay support for
+Subject: [PATCH 05/11] arch: arm: boot: dts: Added dts overlay support for
  ap1302 camera sensors
 
 following dts overlay files are addded to support the camera sensors

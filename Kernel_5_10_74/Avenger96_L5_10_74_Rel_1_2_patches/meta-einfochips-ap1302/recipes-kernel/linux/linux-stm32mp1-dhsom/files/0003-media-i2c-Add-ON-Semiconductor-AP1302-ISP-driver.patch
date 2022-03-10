@@ -1,17 +1,19 @@
-From cd373315c52734e461804e3f6ab7b3971d7f9150 Mon Sep 17 00:00:00 2001
+From a05f4d86a52b69bcdbf19dcbe706ed49cc1cf32f Mon Sep 17 00:00:00 2001
 From: Anil Kumar Mamidala <anil.mamidala@xilinx.com>
 Date: Tue, 16 Nov 2021 17:21:55 +0530
-Subject: [PATCH 3/4] media: i2c: Add ON Semiconductor AP1302 ISP driver
+Subject: [PATCH 03/11] media: i2c: Add ON Semiconductor AP1302 ISP driver
 
 The AP1302 is a standalone ISP for ON Semiconductor sensors.
 AP1302 ISP supports single and dual sensor inputs. The driver
 code supports AR1335, AR0144 and AR0330 sensors with single and
 dual mode by loading the corresponding firmware.
 
+Change-Id: I61bc43dbc3f4f72bb4ddccbe6a39e021dafca25b
 Signed-off-by: Anil Kumar Mamidala <anil.mamidala@xilinx.com>
 Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Signed-off-by: Stefan Hladnik <stefan.hladnik@gmail.com>
 Signed-off-by: Florian Rebaudo <frebaudo@witekio.com>
+Signed-off-by: Anil Dsouza <anil.dsouza@einfochips.com>
 ---
  MAINTAINERS                |    9 +
  drivers/media/i2c/Kconfig  |   14 +
@@ -21,7 +23,7 @@ Signed-off-by: Florian Rebaudo <frebaudo@witekio.com>
  create mode 100644 drivers/media/i2c/ap1302.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 2f2a97bd6d47..d067c3d3f9af 100644
+index 4fef10dd2..1bea647b3 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -1190,6 +1190,15 @@ L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
@@ -41,7 +43,7 @@ index 2f2a97bd6d47..d067c3d3f9af 100644
  M:	William Breathitt Gray <vilhelm.gray@gmail.com>
  L:	linux-iio@vger.kernel.org
 diff --git a/drivers/media/i2c/Kconfig b/drivers/media/i2c/Kconfig
-index 878f66ef2719..18f1946f2f85 100644
+index 878f66ef2..18f1946f2 100644
 --- a/drivers/media/i2c/Kconfig
 +++ b/drivers/media/i2c/Kconfig
 @@ -627,6 +627,20 @@ config VIDEO_UPD64083
@@ -66,7 +68,7 @@ index 878f66ef2719..18f1946f2f85 100644
  
  menu "Audio/Video compression chips"
 diff --git a/drivers/media/i2c/Makefile b/drivers/media/i2c/Makefile
-index f0a77473979d..6742ff8a764e 100644
+index f0a774739..6742ff8a7 100644
 --- a/drivers/media/i2c/Makefile
 +++ b/drivers/media/i2c/Makefile
 @@ -64,6 +64,7 @@ obj-$(CONFIG_VIDEO_VP27SMPX) += vp27smpx.o
@@ -79,7 +81,7 @@ index f0a77473979d..6742ff8a764e 100644
  obj-$(CONFIG_VIDEO_OV2685) += ov2685.o
 diff --git a/drivers/media/i2c/ap1302.c b/drivers/media/i2c/ap1302.c
 new file mode 100644
-index 000000000000..96da195c6c83
+index 000000000..96da195c6
 --- /dev/null
 +++ b/drivers/media/i2c/ap1302.c
 @@ -0,0 +1,2920 @@
