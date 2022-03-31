@@ -11,4 +11,6 @@ SRC_URI += " \
 	file://0008-media-i2c-ap1302-Removed-the-unused-ISP-control-feat.patch \
 	file://0009-media-i2c-ap1320-Add-support-for-arx3a0-sensor-in-ap.patch \
 	file://0010-media-i2c-ap1302-Added-support-for-multiple-media-bu.patch \
-	file://0011-media-i2c-ap1302-Set-v4l2-ISP-controls-default-value.patch"
+	file://0011-media-i2c-ap1302-Set-v4l2-ISP-controls-default-value.patch \
+	file://0012-Add-support-for-ar1335-camera-sensor-interface-using.patch \
+	file://0013-media-i2c-ap1320-Auto-focus-feature-support.patch"
