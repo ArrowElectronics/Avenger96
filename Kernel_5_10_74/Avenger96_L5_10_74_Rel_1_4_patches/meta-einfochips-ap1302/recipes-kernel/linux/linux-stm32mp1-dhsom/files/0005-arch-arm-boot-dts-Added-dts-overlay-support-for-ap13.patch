@@ -1,0 +1,239 @@
+From 5beb73345026eb7ad211ea94517467d450efd88a Mon Sep 17 00:00:00 2001
+From: Anil Dsouza <anil.dsouza@einfochips.com>
+Date: Fri, 11 Feb 2022 16:59:09 +0530
+Subject: [PATCH 05/11] arch: arm: boot: dts: Added dts overlay support for
+ ap1302 camera sensors
+
+following dts overlay files are addded to support the camera sensors
+with ap1302
+1. AR0430 - stm32mp15xx-avenger96-overlay-ap1302-ar0430.dts
+2. ARX3A0 - stm32mp15xx-avenger96-overlay-ap1302-arx3a0.dts
+
+Change-Id: I6cd01a9054fb8b1cddbb619d6fd9c734afe99baa
+Signed-off-by: Anil Dsouza <anil.dsouza@einfochips.com>
+---
+ arch/arm/boot/dts/Makefile                    |  2 +
+ ...mp15xx-avenger96-overlay-ap1302-ar0430.dts | 95 +++++++++++++++++++
+ ...mp15xx-avenger96-overlay-ap1302-arx3a0.dts | 95 +++++++++++++++++++
+ 3 files changed, 192 insertions(+)
+ create mode 100644 arch/arm/boot/dts/stm32mp15xx-avenger96-overlay-ap1302-ar0430.dts
+ create mode 100644 arch/arm/boot/dts/stm32mp15xx-avenger96-overlay-ap1302-arx3a0.dts
+
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 4bca9bb66..91b9d4844 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -1074,6 +1074,8 @@ dtb-$(CONFIG_ARCH_STM32) += \
+ 	stm32mp15xx-avenger96-overlay-i2c2-eeprom-x6.dtbo \
+ 	stm32mp15xx-avenger96-overlay-ov5640-x7.dtbo \
+ 	stm32mp15xx-avenger96-overlay-spi2-eeprom-x6.dtbo \
++	stm32mp15xx-avenger96-overlay-ap1302-ar0430.dtbo \
++	stm32mp15xx-avenger96-overlay-ap1302-arx3a0.dtbo \
+ 	stm32mp157a-dk1.dtb \
+ 	stm32mp157a-iot-box.dtb \
+ 	stm32mp157a-stinger96.dtb \
+diff --git a/arch/arm/boot/dts/stm32mp15xx-avenger96-overlay-ap1302-ar0430.dts b/arch/arm/boot/dts/stm32mp15xx-avenger96-overlay-ap1302-ar0430.dts
+new file mode 100644
+index 000000000..3deeb48b9
+--- /dev/null
++++ b/arch/arm/boot/dts/stm32mp15xx-avenger96-overlay-ap1302-ar0430.dts
+@@ -0,0 +1,95 @@
++#include <dt-bindings/clock/stm32mp1-clks.h>
++#include <dt-bindings/gpio/gpio.h>
++
++/dts-v1/;
++/plugin/;
++
++&{/} {
++	#address-cells = <1>;
++	#size-cells = <1>;
++
++	sram@10050000 {
++               compatible = "mmio-sram";
++               reg = <0x10050000 0x10000>;
++               #address-cells = <1>;
++               #size-cells = <1>;
++               ranges = <0 0x10050000 0x10000>;
++
++               dma_pool: dma_pool@0 {
++                       reg = <0x0 0x10000>;
++                       pool;
++               };
++         };
++};
++
++&dma1 {
++	sram = <&dma_pool>;
++};
++
++&dma2 {
++	sram = <&dma_pool>;
++};
++
++&adc {
++	status = "disabled";
++};
++
++&adc1{
++	status = "disabled";
++};
++
++&adc2{
++	status = "disabled";
++};
++
++&i2c2 {
++	ap1302: camera@3d {
++            compatible = "on,ap1302";
++            reg = <0x3d>;
++            pinctrl-names = "default", "sleep";
++            pinctrl-0 = <&rcc_pins_a>;
++            pinctrl-1 = <&rcc_sleep_pins_a>;
++            clocks = <&rcc CK_MCO1>;
++            clock-names = "xclk";
++            assigned-clocks = <&rcc CK_MCO1>;
++            assigned-clock-rates = <24000000>;
++            reset-gpios = <&gpioc 3 GPIO_ACTIVE_LOW>;
++            standby-gpios = <&gpiod 14 GPIO_ACTIVE_HIGH>;
++            i2csel-gpios = <&gpiof 12 GPIO_ACTIVE_HIGH>;
++            isptrig-gpios = <&gpioa 12 GPIO_ACTIVE_HIGH>;
++            status = "okay";
++
++	    port {
++                    ap1302_0: endpoint {
++                            remote-endpoint = <&stmipi_0>;
++                            data-lanes = <1 2>;
++                    };
++            };
++
++	    sensors {
++                #address-cells = <1>;
++                #size-cells = <0>;
++		onnn,model = "onnn,ar0430";
++                    sensor@0 {
++                        reg = <0>;
++                   };
++            };
++      };
++};
++
++&stmipi{
++	status = "okay";
++
++	ports {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		port@0 {
++			reg = <0>;
++			stmipi_0: endpoint {
++				data-lanes = <1 2>;
++				remote-endpoint = <&ap1302_0>;
++			};
++		};
++	};
++};
+diff --git a/arch/arm/boot/dts/stm32mp15xx-avenger96-overlay-ap1302-arx3a0.dts b/arch/arm/boot/dts/stm32mp15xx-avenger96-overlay-ap1302-arx3a0.dts
+new file mode 100644
+index 000000000..86ff66542
+--- /dev/null
++++ b/arch/arm/boot/dts/stm32mp15xx-avenger96-overlay-ap1302-arx3a0.dts
+@@ -0,0 +1,95 @@
++#include <dt-bindings/clock/stm32mp1-clks.h>
++#include <dt-bindings/gpio/gpio.h>
++
++/dts-v1/;
++/plugin/;
++
++&{/} {
++	#address-cells = <1>;
++	#size-cells = <1>;
++
++	sram@10050000 {
++               compatible = "mmio-sram";
++               reg = <0x10050000 0x10000>;
++               #address-cells = <1>;
++               #size-cells = <1>;
++               ranges = <0 0x10050000 0x10000>;
++
++               dma_pool: dma_pool@0 {
++                       reg = <0x0 0x10000>;
++                       pool;
++               };
++         };
++};
++
++&dma1 {
++	sram = <&dma_pool>;
++};
++
++&dma2 {
++	sram = <&dma_pool>;
++};
++
++&adc {
++	status = "disabled";
++};
++
++&adc1{
++	status = "disabled";
++};
++
++&adc2{
++	status = "disabled";
++};
++
++&i2c2 {
++	ap1302: camera@3d {
++            compatible = "on,ap1302";
++            reg = <0x3d>;
++            pinctrl-names = "default", "sleep";
++            pinctrl-0 = <&rcc_pins_a>;
++            pinctrl-1 = <&rcc_sleep_pins_a>;
++            clocks = <&rcc CK_MCO1>;
++            clock-names = "xclk";
++            assigned-clocks = <&rcc CK_MCO1>;
++            assigned-clock-rates = <24000000>;
++            reset-gpios = <&gpioc 3 GPIO_ACTIVE_LOW>;
++            standby-gpios = <&gpiod 14 GPIO_ACTIVE_HIGH>;
++            i2csel-gpios = <&gpiof 12 GPIO_ACTIVE_HIGH>;
++            isptrig-gpios = <&gpioa 12 GPIO_ACTIVE_HIGH>;
++            status = "okay";
++
++	    port {
++                    ap1302_0: endpoint {
++                            remote-endpoint = <&stmipi_0>;
++                            data-lanes = <1 2>;
++                    };
++            };
++
++	    sensors {
++                #address-cells = <1>;
++                #size-cells = <0>;
++		onnn,model = "onnn,arx3a0";
++                    sensor@0 {
++                        reg = <0>;
++                   };
++            };
++      };
++};
++
++&stmipi{
++	status = "okay";
++
++	ports {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		port@0 {
++			reg = <0>;
++			stmipi_0: endpoint {
++			data-lanes = <1 2>;
++			remote-endpoint = <&ap1302_0>;
++			};
++		};
++	};
++};
+-- 
+2.17.1
+

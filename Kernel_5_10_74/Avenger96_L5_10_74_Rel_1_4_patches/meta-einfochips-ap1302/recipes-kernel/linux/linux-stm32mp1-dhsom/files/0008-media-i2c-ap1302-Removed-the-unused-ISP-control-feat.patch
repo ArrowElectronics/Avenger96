@@ -1,0 +1,586 @@
+From 6cf9fa8f0c1cc60c55a541b55e876d912eebd8f6 Mon Sep 17 00:00:00 2001
+From: Anil Dsouza <anil.dsouza@einfochips.com>
+Date: Fri, 4 Mar 2022 15:58:25 +0530
+Subject: [PATCH 08/11] media : i2c: ap1302: Removed the unused ISP control
+ features
+
+following unused AP1302 ISP control features are removed
+User Controls
+1. Powerline frequency
+2. Color effects
+
+Camera controls
+1. Zoom absolute
+2. Scene mode
+3. Exposure metering
+4. White balance modes (except auto and manual mode)
+
+Change-Id: I4572d1bf1ffab1ebd64e7c65658c3bbad47aef4a
+Signed-off-by: Anil Dsouza <anil.dsouza@einfochips.com>
+---
+ drivers/media/i2c/ap1302.c | 365 ++++++++++++++-----------------------
+ 1 file changed, 134 insertions(+), 231 deletions(-)
+
+diff --git a/drivers/media/i2c/ap1302.c b/drivers/media/i2c/ap1302.c
+index 215adadf5..0a5bac91e 100644
+--- a/drivers/media/i2c/ap1302.c
++++ b/drivers/media/i2c/ap1302.c
+@@ -20,7 +20,6 @@
+ #include <linux/mutex.h>
+ #include <linux/regmap.h>
+ #include <linux/regulator/consumer.h>
+-
+ #include <media/media-entity.h>
+ #include <media/v4l2-ctrls.h>
+ #include <media/v4l2-device.h>
+@@ -461,7 +460,7 @@ struct ap1302_device {
+ 
+ 	struct {
+ 		struct dentry *dir;
+-		struct mutex lock;
++		struct mutex lock; /* Protects simultaneous read write */
+ 		u32 sipm_addr;
+ 		u32 reg_addr;
+ 	} debugfs;
+@@ -1305,6 +1304,7 @@ static int ap1302_stall(struct ap1302_device *ap1302, bool stall)
+ 
+ 		ap1302->streaming = false;
+ 		return 0;
++
+ 	} else {
+ 		ap1302->streaming = true;
+ 		return ap1302_write(ap1302, AP1302_SYS_START,
+@@ -1348,14 +1348,6 @@ static int ap1302_set_mipi_t3_clk(struct ap1302_device *ap1302)
+ static u16 ap1302_wb_values[] = {
+ 	AP1302_AWB_CTRL_MODE_OFF,	/* V4L2_WHITE_BALANCE_MANUAL */
+ 	AP1302_AWB_CTRL_MODE_AUTO,	/* V4L2_WHITE_BALANCE_AUTO */
+-	AP1302_AWB_CTRL_MODE_A,		/* V4L2_WHITE_BALANCE_INCANDESCENT */
+-	AP1302_AWB_CTRL_MODE_D50,	/* V4L2_WHITE_BALANCE_FLUORESCENT */
+-	AP1302_AWB_CTRL_MODE_D65,	/* V4L2_WHITE_BALANCE_FLUORESCENT_H */
+-	AP1302_AWB_CTRL_MODE_HORIZON,	/* V4L2_WHITE_BALANCE_HORIZON */
+-	AP1302_AWB_CTRL_MODE_D65,	/* V4L2_WHITE_BALANCE_DAYLIGHT */
+-	AP1302_AWB_CTRL_MODE_AUTO,	/* V4L2_WHITE_BALANCE_FLASH */
+-	AP1302_AWB_CTRL_MODE_D75,	/* V4L2_WHITE_BALANCE_CLOUDY */
+-	AP1302_AWB_CTRL_MODE_D75,	/* V4L2_WHITE_BALANCE_SHADE */
+ };
+ 
+ static int ap1302_set_wb_mode(struct ap1302_device *ap1302, s32 mode)
+@@ -1370,11 +1362,6 @@ static int ap1302_set_wb_mode(struct ap1302_device *ap1302, s32 mode)
+ 	val &= ~AP1302_AWB_CTRL_MODE_MASK;
+ 	val |= ap1302_wb_values[mode];
+ 
+-	if (mode == V4L2_WHITE_BALANCE_FLASH)
+-		val |= AP1302_AWB_CTRL_FLASH;
+-	else
+-		val &= ~AP1302_AWB_CTRL_FLASH;
+-
+ 	return ap1302_write(ap1302, AP1302_AWB_CTRL, val, NULL);
+ }
+ 
+@@ -1393,11 +1380,6 @@ static int ap1302_set_exposure(struct ap1302_device *ap1302, s32 mode)
+ 	return ap1302_write(ap1302, AP1302_AE_CTRL, val, NULL);
+ }
+ 
+-static int ap1302_set_exp_met(struct ap1302_device *ap1302, s32 val)
+-{
+-	return ap1302_write(ap1302, AP1302_AE_MET, val, NULL);
+-}
+-
+ static int ap1302_set_gain(struct ap1302_device *ap1302, s32 val)
+ {
+ 	return ap1302_write(ap1302, AP1302_AE_MANUAL_GAIN, val, NULL);
+@@ -1423,72 +1405,6 @@ static int ap1302_set_gamma(struct ap1302_device *ap1302, s32 val)
+ 	return ap1302_write(ap1302, AP1302_GAMMA, val, NULL);
+ }
+ 
+-static int ap1302_set_zoom(struct ap1302_device *ap1302, s32 val)
+-{
+-	return ap1302_write(ap1302, AP1302_DZ_TGT_FCT, val, NULL);
+-}
+-
+-static u16 ap1302_sfx_values[] = {
+-	AP1302_SFX_MODE_SFX_NORMAL,	/* V4L2_COLORFX_NONE */
+-	AP1302_SFX_MODE_SFX_BW,		/* V4L2_COLORFX_BW */
+-	AP1302_SFX_MODE_SFX_SEPIA1,	/* V4L2_COLORFX_SEPIA */
+-	AP1302_SFX_MODE_SFX_NEGATIVE,	/* V4L2_COLORFX_NEGATIVE */
+-	AP1302_SFX_MODE_SFX_EMBOSS,	/* V4L2_COLORFX_EMBOSS */
+-	AP1302_SFX_MODE_SFX_SKETCH,	/* V4L2_COLORFX_SKETCH */
+-	AP1302_SFX_MODE_SFX_BLUISH,	/* V4L2_COLORFX_SKY_BLUE */
+-	AP1302_SFX_MODE_SFX_GREENISH,	/* V4L2_COLORFX_GRASS_GREEN */
+-	AP1302_SFX_MODE_SFX_REDISH,	/* V4L2_COLORFX_SKIN_WHITEN */
+-	AP1302_SFX_MODE_SFX_NORMAL,	/* V4L2_COLORFX_VIVID */
+-	AP1302_SFX_MODE_SFX_NORMAL,	/* V4L2_COLORFX_AQUA */
+-	AP1302_SFX_MODE_SFX_NORMAL,	/* V4L2_COLORFX_ART_FREEZE */
+-	AP1302_SFX_MODE_SFX_NORMAL,	/* V4L2_COLORFX_SILHOUETTE */
+-	AP1302_SFX_MODE_SFX_SOLARIZE, /* V4L2_COLORFX_SOLARIZATION */
+-	AP1302_SFX_MODE_SFX_ANTIQUE, /* V4L2_COLORFX_ANTIQUE */
+-	AP1302_SFX_MODE_SFX_NORMAL,	/* V4L2_COLORFX_SET_CBCR */
+-};
+-
+-static int ap1302_set_special_effect(struct ap1302_device *ap1302, s32 val)
+-{
+-	return ap1302_write(ap1302, AP1302_SFX_MODE, ap1302_sfx_values[val],
+-			    NULL);
+-}
+-
+-static u16 ap1302_scene_mode_values[] = {
+-	AP1302_SCENE_CTRL_MODE_NORMAL,		/* V4L2_SCENE_MODE_NONE */
+-	AP1302_SCENE_CTRL_MODE_BACKLIGHT,	/* V4L2_SCENE_MODE_BACKLIGHT */
+-	AP1302_SCENE_CTRL_MODE_BEACH,		/* V4L2_SCENE_MODE_BEACH_SNOW */
+-	AP1302_SCENE_CTRL_MODE_TWILIGHT,	/* V4L2_SCENE_MODE_CANDLE_LIGHT */
+-	AP1302_SCENE_CTRL_MODE_NORMAL,		/* V4L2_SCENE_MODE_DAWN_DUSK */
+-	AP1302_SCENE_CTRL_MODE_NORMAL,		/* V4L2_SCENE_MODE_FALL_COLORS */
+-	AP1302_SCENE_CTRL_MODE_FIREWORKS,	/* V4L2_SCENE_MODE_FIREWORKS */
+-	AP1302_SCENE_CTRL_MODE_LANDSCAPE,	/* V4L2_SCENE_MODE_LANDSCAPE */
+-	AP1302_SCENE_CTRL_MODE_NIGHT,		/* V4L2_SCENE_MODE_NIGHT */
+-	AP1302_SCENE_CTRL_MODE_PARTY,		/* V4L2_SCENE_MODE_PARTY_INDOOR */
+-	AP1302_SCENE_CTRL_MODE_PORTRAIT,	/* V4L2_SCENE_MODE_PORTRAIT */
+-	AP1302_SCENE_CTRL_MODE_SPORT,		/* V4L2_SCENE_MODE_SPORTS */
+-	AP1302_SCENE_CTRL_MODE_SUNSET,		/* V4L2_SCENE_MODE_SUNSET */
+-	AP1302_SCENE_CTRL_MODE_DOCUMENT,	/* V4L2_SCENE_MODE_TEXT */
+-};
+-
+-static int ap1302_set_scene_mode(struct ap1302_device *ap1302, s32 val)
+-{
+-	return ap1302_write(ap1302, AP1302_SCENE_CTRL,
+-			    ap1302_scene_mode_values[val], NULL);
+-}
+-
+-static const u16 ap1302_flicker_values[] = {
+-	AP1302_FLICK_CTRL_MODE_DISABLED,
+-	AP1302_FLICK_CTRL_FREQ(50) | AP1302_FLICK_CTRL_MODE_MANUAL,
+-	AP1302_FLICK_CTRL_FREQ(60) | AP1302_FLICK_CTRL_MODE_MANUAL,
+-	AP1302_FLICK_CTRL_MODE_AUTO,
+-};
+-
+-static int ap1302_set_flicker_freq(struct ap1302_device *ap1302, s32 val)
+-{
+-	return ap1302_write(ap1302, AP1302_FLICK_CTRL,
+-			    ap1302_flicker_values[val], NULL);
+-}
+-
+ static int ap1302_s_ctrl(struct v4l2_ctrl *ctrl)
+ {
+ 	struct ap1302_device *ap1302 =
+@@ -1500,9 +1416,6 @@ static int ap1302_s_ctrl(struct v4l2_ctrl *ctrl)
+ 	case V4L2_CID_EXPOSURE:
+ 		return ap1302_set_exposure(ap1302, ctrl->val);
+ 
+-	case V4L2_CID_EXPOSURE_METERING:
+-		return ap1302_set_exp_met(ap1302, ctrl->val);
+-
+ 	case V4L2_CID_GAIN:
+ 		return ap1302_set_gain(ap1302, ctrl->val);
+ 
+@@ -1518,18 +1431,6 @@ static int ap1302_s_ctrl(struct v4l2_ctrl *ctrl)
+ 	case V4L2_CID_SATURATION:
+ 		return ap1302_set_saturation(ap1302, ctrl->val);
+ 
+-	case V4L2_CID_ZOOM_ABSOLUTE:
+-		return ap1302_set_zoom(ap1302, ctrl->val);
+-
+-	case V4L2_CID_COLORFX:
+-		return ap1302_set_special_effect(ap1302, ctrl->val);
+-
+-	case V4L2_CID_SCENE_MODE:
+-		return ap1302_set_scene_mode(ap1302, ctrl->val);
+-
+-	case V4L2_CID_POWER_LINE_FREQUENCY:
+-		return ap1302_set_flicker_freq(ap1302, ctrl->val);
+-
+ 	case V4L2_CID_LINK_FREQ:
+ 		return 0;
+ 
+@@ -1547,7 +1448,7 @@ static const struct v4l2_ctrl_config ap1302_ctrls[] = {
+ 		.ops = &ap1302_ctrl_ops,
+ 		.id = V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE,
+ 		.min = 0,
+-		.max = 9,
++		.max = 1,
+ 		.def = 1,
+ 	}, {
+ 		.ops = &ap1302_ctrl_ops,
+@@ -1594,15 +1495,6 @@ static const struct v4l2_ctrl_config ap1302_ctrls[] = {
+ 		.max = 0xC,
+ 		.step = 1,
+ 		.def = 0xC,
+-	}, {
+-		.ops = &ap1302_ctrl_ops,
+-		.id = V4L2_CID_EXPOSURE_METERING,
+-		.name = "Exposure Metering",
+-		.type = V4L2_CTRL_TYPE_INTEGER,
+-		.min = 0x0,
+-		.max = 0x3,
+-		.step = 1,
+-		.def = 0x1,
+ 	}, {
+ 		.ops = &ap1302_ctrl_ops,
+ 		.id = V4L2_CID_GAIN,
+@@ -1612,33 +1504,6 @@ static const struct v4l2_ctrl_config ap1302_ctrls[] = {
+ 		.max = 0xFFFF,
+ 		.step = 0x100,
+ 		.def = 0x100,
+-	}, {
+-		.ops = &ap1302_ctrl_ops,
+-		.id = V4L2_CID_ZOOM_ABSOLUTE,
+-		.min = 0x0100,
+-		.max = 0x1000,
+-		.step = 1,
+-		.def = 0x0100,
+-	}, {
+-		.ops = &ap1302_ctrl_ops,
+-		.id = V4L2_CID_COLORFX,
+-		.min = 0,
+-		.max = 15,
+-		.def = 0,
+-		.menu_skip_mask = BIT(15) | BIT(12) | BIT(11) | BIT(10) | BIT(9),
+-	}, {
+-		.ops = &ap1302_ctrl_ops,
+-		.id = V4L2_CID_SCENE_MODE,
+-		.min = 0,
+-		.max = 13,
+-		.def = 0,
+-		.menu_skip_mask = BIT(5) | BIT(4),
+-	}, {
+-		.ops = &ap1302_ctrl_ops,
+-		.id = V4L2_CID_POWER_LINE_FREQUENCY,
+-		.min = 0,
+-		.max = 3,
+-		.def = 3,
+ 	}, {
+ 		.ops = &ap1302_ctrl_ops,
+ 		.id = V4L2_CID_LINK_FREQ,
+@@ -1787,23 +1652,22 @@ static int ap1302_enum_frame_size(struct v4l2_subdev *sd,
+ 	return 0;
+ }
+ 
+-static int ap1302_enum_frame_interval(
+-    struct v4l2_subdev *sd,
+-    struct v4l2_subdev_pad_config *cfg,
+-    struct v4l2_subdev_frame_interval_enum *fie)
++static int ap1302_enum_frame_interval(struct v4l2_subdev *sd,
++				      struct v4l2_subdev_pad_config *cfg,
++				      struct v4l2_subdev_frame_interval_enum *fie)
+ {
+-    struct ap1302_device *ap1302 = to_ap1302(sd);
+-    const struct ap1302_sensor_info *info = ap1302->sensor_info;
+-    if (fie->pad != 0)
+-	    return -EINVAL;
+-    if (fie->index)
+-	    return -EINVAL;
++	struct ap1302_device *ap1302 = to_ap1302(sd);
++	const struct ap1302_sensor_info *info = ap1302->sensor_info;
+ 
+-    fie->interval.numerator = 1;
+-    fie->interval.denominator = info->fps;
+-    return 0;
+-};
++	if (fie->pad != 0)
++		return -EINVAL;
++	if (fie->index)
++		return -EINVAL;
+ 
++	fie->interval.numerator = 1;
++	fie->interval.denominator = info->fps;
++	return 0;
++}
+ 
+ static int ap1302_get_fmt(struct v4l2_subdev *sd,
+ 			  struct v4l2_subdev_pad_config *cfg,
+@@ -2075,8 +1939,8 @@ static void ap1302_log_lane_state(struct ap1302_sensor *sensor,
+ 		for (i = 0; i < ARRAY_SIZE(ap1302_lane_states); ++i) {
+ 			if (counts[lane][i])
+ 				pr_cont(" %s:%u",
+-				       ap1302_lane_states[i],
+-				       counts[lane][i]);
++					ap1302_lane_states[i],
++					counts[lane][i]);
+ 		}
+ 		pr_cont("\n");
+ 	}
+@@ -2452,6 +2316,7 @@ static int ap1302_write_fw_window(struct ap1302_device *ap1302, const u8 *buf,
+ 
+ 	return 0;
+ }
++
+ /*
+  * This function is to set MIPI Clock to get desired data rate
+  * Eg:	For Data Rate 320 Mbps
+@@ -2472,43 +2337,78 @@ static int ap1302_init_pll(struct ap1302_device *ap1302)
+ {
+ 	int ret;
+ 
+-	ret = ap1302_write(ap1302,AP1302_SYSTEM_FREQ_IN,0x300000, NULL);
++	ret = ap1302_write(ap1302,
++			   AP1302_SYSTEM_FREQ_IN,
++			   0x300000,
++			   NULL);
++	if (ret)
++		return ret;
++	ret = ap1302_write(ap1302,
++			   AP1302_PLL_0_DIV,
++			   0x1A0100,
++			   NULL);
++	if (ret)
++		return ret;
++	ret = ap1302_write(ap1302,
++			   AP1302_PLL_1_DIV,
++			   0x140100,
++			   NULL);
+ 	if (ret)
+ 		return ret;
+-	ret = ap1302_write(ap1302,AP1302_PLL_0_DIV,0x1A0100,NULL);
++	ret = ap1302_write(ap1302,
++			   AP1302_PREVIEW_DIV_CPU,
++			   0x010008,
++			   NULL);
+ 	if (ret)
+-                return ret;
+-	ret = ap1302_write(ap1302,AP1302_PLL_1_DIV,0x140100,NULL);
++		return ret;
++	ret = ap1302_write(ap1302,
++			   AP1302_PREVIEW_DIV_IPIPE,
++			   0x010009,
++			   NULL);
+ 	if (ret)
+-                return ret;
+-	ret = ap1302_write(ap1302,AP1302_PREVIEW_DIV_CPU,0x010008,NULL);
++		return ret;
++	ret = ap1302_write(ap1302,
++			   AP1302_PREVIEW_DIV_SINF,
++			   0x030002,
++			   NULL);
+ 	if (ret)
+-                return ret;
+-	ret = ap1302_write(ap1302,AP1302_PREVIEW_DIV_IPIPE,0x010009,NULL);
++		return ret;
++	ret = ap1302_write(ap1302,
++			   AP1302_PREVIEW_DIV_HINF,
++			   0x030009,
++			   NULL);
+ 	if (ret)
+-                return ret;
+-	ret = ap1302_write(ap1302,AP1302_PREVIEW_DIV_SINF,0x030002,NULL);
+-        if (ret)
+-                return ret;
+-	ret = ap1302_write(ap1302,AP1302_PREVIEW_DIV_HINF,0x030009,NULL);
+-        if (ret)
+-                return ret;
+-	ret = ap1302_write(ap1302,AP1302_PREVIEW_DIV_HINF_MIPI,0x030004,NULL);
+-        if (ret)
+-                return ret;
+-	ret = ap1302_write(ap1302,AP1302_PREVIEW_DIV_IP,0x010009,NULL);
+-        if (ret)
+-                return ret;
+-	ret = ap1302_write(ap1302,AP1302_PREVIEW_DIV_SPI,0x00003E,NULL);
+-        if (ret)
+-                return ret;
+-	ret = ap1302_write(ap1302,AP1302_PREVIEW_DIV_PRI_SENSOR,0x010026, NULL);
+-        if (ret)
+-                return ret;
+-	ret = ap1302_write(ap1302,AP1302_PREVIEW_DIV_SEC_SENSOR,0x0100FF,NULL);
+-        if (ret)
+-                return ret;
+-
++		return ret;
++	ret = ap1302_write(ap1302,
++			   AP1302_PREVIEW_DIV_HINF_MIPI,
++			   0x030004,
++			   NULL);
++	if (ret)
++		return ret;
++	ret = ap1302_write(ap1302,
++			   AP1302_PREVIEW_DIV_IP,
++			   0x010009,
++			   NULL);
++	if (ret)
++		return ret;
++	ret = ap1302_write(ap1302,
++			   AP1302_PREVIEW_DIV_SPI,
++			   0x00003E,
++			   NULL);
++	if (ret)
++		return ret;
++	ret = ap1302_write(ap1302,
++			   AP1302_PREVIEW_DIV_PRI_SENSOR,
++			   0x010026,
++			   NULL);
++	if (ret)
++		return ret;
++	ret = ap1302_write(ap1302,
++			   AP1302_PREVIEW_DIV_SEC_SENSOR,
++			   0x0100FF,
++			   NULL);
++	if (ret)
++		return ret;
+ 	return 0;
+ }
+ 
+@@ -2543,11 +2443,11 @@ static int ap1302_load_firmware(struct ap1302_device *ap1302)
+ 	/*
+ 	 *This is to check if PLL gets locked
+ 	 */
+-	for(cnt=0;!ret && (cnt<10);cnt++){
+-		msleep(2);
++	for (cnt = 0; !ret && (cnt < 10); cnt++) {
++		usleep_range(2000, 2500);
+ 		ret = ap1302_read(ap1302, AP1302_SYS_START, &val);
+-		if ((val & AP1302_SYS_START_PLL_LOCK)){
+-			dev_info(ap1302->dev,"PLL locked\n");
++		if ((val & AP1302_SYS_START_PLL_LOCK)) {
++			dev_info(ap1302->dev, "PLL locked\n");
+ 			break;
+ 		}
+ 	}
+@@ -2559,23 +2459,26 @@ static int ap1302_load_firmware(struct ap1302_device *ap1302)
+ 
+ 	msleep(40);
+ 
+-	/* PLL settings are intialized again based on the ISP and sensor configuration */
++	/*
++	 * PLL settings are initialized again
++	 * based on the ISP and sensor configuration
++	 */
+ 	ret = ap1302_init_pll(ap1302);
+ 	if (ret)
+ 		return ret;
+ 
+-        /*
++	/*
+ 	 *This is to check if PLL gets locked with new configurations
+ 	 */
+-        val=0x00;
+-        for(cnt=0; !ret && (cnt<10);cnt++){
+-                msleep(2);
+-                ret = ap1302_read(ap1302, AP1302_SYS_START, &val);
+-                if ((val & AP1302_SYS_START_PLL_LOCK )) {
+-                        dev_info(ap1302->dev,"PLL locked\n");
+-                        break;
+-                }
+-        }
++	val = 0x00;
++	for (cnt = 0; !ret && (cnt < 10); cnt++) {
++		usleep_range(2000, 2500);
++		ret = ap1302_read(ap1302, AP1302_SYS_START, &val);
++		if ((val & AP1302_SYS_START_PLL_LOCK)) {
++			dev_info(ap1302->dev, "PLL locked\n");
++			break;
++		}
++	}
+ 
+ 	/*
+ 	 * Write 0xffff to the bootdata_stage register to indicate to the
+@@ -2587,21 +2490,20 @@ static int ap1302_load_firmware(struct ap1302_device *ap1302)
+ 
+ 	msleep(30);
+ 	ret = ap1302_read(ap1302, AP1302_BOOTDATA_CHECKSUM, &checksum);
+-        if (ret)
+-        {
+-                dev_err(ap1302->dev,"load firmware - read checksum error\n");
+-                return ret;
+-        }
+-
+-        if (checksum != fw_hdr->checksum) {
+-                 dev_err(ap1302->dev,
+-                          "checksum mismatch: expected 0x%04x, got 0x%04x\n ret = %d",
+-                          fw_hdr->checksum, checksum,ret);
+-                 return -EAGAIN;
+-        }
+-        else {
+-                 dev_info(ap1302->dev,"checksum matched \n");
+-        }
++	if (ret) {
++		dev_err(ap1302->dev, "load firmware - read checksum error\n");
++		return ret;
++	}
++
++	if (checksum != fw_hdr->checksum) {
++		dev_err(ap1302->dev,
++			"checksum mismatch: expected 0x%04x, got 0x%04x\n",
++			fw_hdr->checksum, checksum);
++		return -EAGAIN;
++
++	} else {
++		dev_info(ap1302->dev, "checksum matched\n");
++	}
+ 
+ 	/* The AP1302 starts outputting frames right after boot, stop it. */
+ 	ret = ap1302_stall(ap1302, true);
+@@ -2718,7 +2620,8 @@ static int ap1302_config_v4l2(struct ap1302_device *ap1302)
+ 	sd->entity.ops = &ap1302_media_ops;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(ap1302->pads); ++i)
+-	ap1302->pads[i].flags = MEDIA_PAD_FL_SOURCE;
++		ap1302->pads[i].flags = MEDIA_PAD_FL_SOURCE;
++
+ 	ret = media_entity_pads_init(&sd->entity, ARRAY_SIZE(ap1302->pads),
+ 				     ap1302->pads);
+ 	if (ret < 0) {
+@@ -2739,7 +2642,8 @@ static int ap1302_config_v4l2(struct ap1302_device *ap1302)
+ 
+ 	ret = v4l2_async_register_subdev(sd);
+ 	if (ret < 0) {
+-		dev_err(ap1302->dev, "v4l2_async_register_subdev failed %d\n", ret);
++		dev_err(ap1302->dev, "v4l2_async_register_subdev failed %d\n",
++			ret);
+ 		goto error_ctrls;
+ 	}
+ 
+@@ -2788,25 +2692,23 @@ static int ap1302_parse_of(struct ap1302_device *ap1302)
+ 	}
+ 	/* request optional I2C address select pin */
+ 	ap1302->i2csel_gpio = devm_gpiod_get_optional(ap1302->dev, "i2csel",
+-						    GPIOD_OUT_HIGH);
+-	if (IS_ERR(ap1302->i2csel_gpio))
+-	{
+-		dev_err( ap1302->dev, "Can't get i2csel GPIO: %ld\n",
++						      GPIOD_OUT_HIGH);
++	if (IS_ERR(ap1302->i2csel_gpio)) {
++		dev_err(ap1302->dev, "Can't get i2csel GPIO: %ld\n",
+ 			PTR_ERR(ap1302->i2csel_gpio));
+-	}
+-	else
++	} else {
+ 		gpiod_set_value(ap1302->i2csel_gpio, 1);
++	}
+ 
+ 	/* ISP Trigger Pin */
+ 	ap1302->isptrig_gpio = devm_gpiod_get_optional(ap1302->dev, "isptrig",
+-						    GPIOD_OUT_HIGH);
+-	if (IS_ERR(ap1302->isptrig_gpio))
+-	{
+-		dev_err( ap1302->dev, "Can't get isptrig GPIO: %ld\n",
++						       GPIOD_OUT_HIGH);
++	if (IS_ERR(ap1302->isptrig_gpio)) {
++		dev_err(ap1302->dev, "Can't get isptrig GPIO: %ld\n",
+ 			PTR_ERR(ap1302->isptrig_gpio));
+-	}
+-	else
++	} else {
+ 		gpiod_set_value(ap1302->isptrig_gpio, 1);
++	}
+ 
+ 	/* Bus configuration */
+ 	ep = fwnode_graph_get_next_endpoint(dev_fwnode(ap1302->dev), NULL);
+@@ -2898,7 +2800,8 @@ static int ap1302_probe(struct i2c_client *client, const struct i2c_device_id *i
+ {
+ 	struct ap1302_device *ap1302;
+ 	int ret;
+-	const struct ap1302_sensor_info *info=NULL;
++	const struct ap1302_sensor_info *info = NULL;
++
+ 	ap1302 = devm_kzalloc(&client->dev, sizeof(*ap1302), GFP_KERNEL);
+ 	if (!ap1302)
+ 		return -ENOMEM;
+@@ -2942,7 +2845,7 @@ static int ap1302_probe(struct i2c_client *client, const struct i2c_device_id *i
+ 	if (ret)
+ 		goto error_hw_cleanup;
+ 
+-	dev_info(ap1302->dev,"ap1302 driver probed successfully \n");
++	dev_info(ap1302->dev, "ap1302 driver probed successfully\n");
+ 	return 0;
+ 
+ error_hw_cleanup:
+-- 
+2.17.1
+
