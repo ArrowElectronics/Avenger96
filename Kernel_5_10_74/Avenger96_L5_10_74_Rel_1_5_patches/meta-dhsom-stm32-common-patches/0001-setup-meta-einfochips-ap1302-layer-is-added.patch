@@ -1,0 +1,31 @@
+From aebc1fcca04b5a669d0287b46db1cbd9532a1299 Mon Sep 17 00:00:00 2001
+From: Anil Dsouza <anil.dsouza@einfochips.com>
+Date: Tue, 18 Jan 2022 18:48:07 +0530
+Subject: [PATCH] setup: meta-einfochips-ap1302 layer is added for AP1302
+ support
+
+append new mete-einfochips-layer to support AP1302 interface
+with avenger96 board
+
+Signed-off-by: Anil Dsouza <anil.dsouza@einfochips.com>
+---
+ setup-environment | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/setup-environment b/setup-environment
+index 8a42699..76a11ad 100644
+--- a/setup-environment
++++ b/setup-environment
+@@ -143,7 +143,8 @@ EOF
+             ln -s $s/site.conf conf
+         fi
+     done
+-
++    echo "" >> conf/bblayers.conf
++    echo "BBLAYERS += \"\${BSPDIR}/sources/meta-einfochips-ap1302\"" >> conf/bblayers.conf
+     generated_config=1
+ fi
+ 
+-- 
+2.17.1
+

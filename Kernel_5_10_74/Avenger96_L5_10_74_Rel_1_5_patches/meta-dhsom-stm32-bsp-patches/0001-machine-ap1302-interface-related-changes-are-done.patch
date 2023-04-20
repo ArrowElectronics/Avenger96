@@ -1,0 +1,44 @@
+From 7430dd5d7248e1a612f243e00358620edee4ed81 Mon Sep 17 00:00:00 2001
+From: Deepak Rathore <deepak.rathore@einfochips.com>
+Date: Thu, 20 Jan 2022 17:18:13 +0530
+Subject: [PATCH] machine: ap1302 interface related changes are done
+
+following packages are appended
+1. av96-root-files
+2. ap1302-firmware
+following dtbo files are appened
+1. stm32mp15xx-avenger96-overlay-ap1302-arx3a0.dtbo
+2. stm32mp15xx-avenger96-overlay-ap1302-ar0430.dtbo
+3. stm32mp15xx-avenger96-overlay-ap1302-ar1335.dtbo
+
+Signed-off-by: Deepak Rathore <deepak.rathore@einfochips.com>
+Signed-off-by: Anil Dsouza <anil.dsouza@einfochips.com>
+---
+ conf/machine/dh-stm32mp1-dhcor-avenger96.conf | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/conf/machine/dh-stm32mp1-dhcor-avenger96.conf b/conf/machine/dh-stm32mp1-dhcor-avenger96.conf
+index 1c0495f..6d5c9e6 100644
+--- a/conf/machine/dh-stm32mp1-dhcor-avenger96.conf
++++ b/conf/machine/dh-stm32mp1-dhcor-avenger96.conf
+@@ -19,6 +19,9 @@ KERNEL_DEVICETREE = " \
+ 	stm32mp15xx-avenger96-overlay-i2c2-eeprom-x6.dtbo \
+ 	stm32mp15xx-avenger96-overlay-ov5640-x7.dtbo \
+ 	stm32mp15xx-avenger96-overlay-spi2-eeprom-x6.dtbo \
++	stm32mp15xx-avenger96-overlay-ap1302-arx3a0.dtbo \
++	stm32mp15xx-avenger96-overlay-ap1302-ar0430.dtbo \
++	stm32mp15xx-avenger96-overlay-ap1302-ar1335.dtbo \
+ 	"
+ 
+ # Ship kernel modules
+@@ -27,3 +30,7 @@ MACHINE_ESSENTIAL_EXTRA_RDEPENDS += " \
+ 	cypress-firmware-bcm43xx-fmac-fw-bcm43455-1mw-sdio \
+ 	cypress-firmware-bcm43xx-fmac-nvram-bcm43455-1mw-sdio \
+ 	"
++
++#Changes for ap1302 interface
++IMAGE_INSTALL_append += "ap1302-firmware \
++                         av96-root-files "
+-- 
+2.17.1
+

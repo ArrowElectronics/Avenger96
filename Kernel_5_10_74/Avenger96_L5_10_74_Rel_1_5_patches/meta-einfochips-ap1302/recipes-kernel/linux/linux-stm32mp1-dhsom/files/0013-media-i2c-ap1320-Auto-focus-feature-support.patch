@@ -1,0 +1,381 @@
+From 93b2b67a9f3ec0816c0d75d88eabeee2c9818448 Mon Sep 17 00:00:00 2001
+From: Anil Dsouza <anil.dsouza@einfochips.com>
+Date: Wed, 23 Mar 2022 12:09:48 +0530
+Subject: [PATCH] media: i2c: ap1320: Auto focus feature support
+
+* Auto focus feature is supported through v4l2 framework
+* Two modes of Auto focus is supported through "focus_automatic_continuous"
+  v4l2 control
+	1)Continuos mode - focus_automatic_continuous = 1
+	2)Manual mode    - focus_automatic_continuous = 0
+* In manual mode the lens position value can be written from the v4l2
+  framework using "focus_absolute" control
+* In continous mode the lens position value can be read from the v4l2
+  framework using "focus_absolute" control
+* Color order issue with MIPI lines of AP1302 with RGB565 format stream
+  is fixed
+* fps of AR1335 is reduced to 15fps to fix image shaking issue
+* RGB565 format is supported as default format for AR1335 streaming
+
+Change-Id: I5cc3489ac346be81fe17889e8e5472f74aeaf0b7
+Signed-off-by: Anil Dsouza <anil.dsouza@einfochips.com>
+---
+ drivers/media/i2c/ap1302.c | 225 +++++++++++++++++++++++++++++++++++--
+ 1 file changed, 216 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/media/i2c/ap1302.c b/drivers/media/i2c/ap1302.c
+index 051acf3a6..43cabbeb8 100644
+--- a/drivers/media/i2c/ap1302.c
++++ b/drivers/media/i2c/ap1302.c
+@@ -27,6 +27,8 @@
+ 
+ #define DRIVER_NAME "ap1302"
+ 
++#define AR1335_MODEL   "onnn,ar1335"
++
+ #define AP1302_FW_WINDOW_SIZE			0x2000
+ #define AP1302_FW_WINDOW_OFFSET			0x8000
+ 
+@@ -309,7 +311,12 @@
+ #define AP1302_CONTRAST			AP1302_REG_16BIT(0x7002)
+ #define AP1302_SATURATION			AP1302_REG_16BIT(0x7006)
+ #define AP1302_GAMMA				AP1302_REG_16BIT(0x700A)
++#define AP1302_ABSOLUTE_AF_CTRL		AP1302_REG_16BIT(0x505c)
++#define AP1302_AF_CTRL				AP1302_REG_16BIT(0x5058)
+ 
++#define AP1302_AF_CTRL_MODE_MASK		0x000f
++#define AP1302_AF_CTRL_MODE_MANUAL		0x0003
++#define AP1302_AF_CTRL_MODE_CONTINUOUS		0x0008
+ /* Misc Registers */
+ #define AP1302_REG_ADV_START			0xe000
+ #define AP1302_ADVANCED_BASE			AP1302_REG_32BIT(0xf038)
+@@ -369,9 +376,12 @@
+ #define AP1302_TCLK_PRE_MASK			0xFF00
+ #define AP1302_TCLK_PRE_SHIFT			0x8
+ 
++#define AP1302_ADV_MIPI_FIX			AP1302_REG_32BIT(0x00730000)
++
+ #define AP1302_V4L2_CTRLS			7
+ #define AWB_MODE_0				0x00000000
+ #define AWB_MODE_1				0x00000001
++#define AF_MODE_1				0x0001
+ struct ap1302_device;
+ 
+ enum {
+@@ -455,9 +465,13 @@ struct ap1302_device {
+ 	struct ap1302_format formats[AP1302_PAD_MAX];
+ 	unsigned int width_factor;
+ 	bool streaming;
++	bool v4l2_ctrl_af_manual_mode;
+ 	struct v4l2_fract frame_interval;
+ 	struct v4l2_ctrl_handler ctrls;
+ 
++	struct v4l2_ctrl *auto_focus_mode;
++	struct v4l2_ctrl *auto_focus_abs;
++
+ 	const struct ap1302_sensor_info *sensor_info;
+ 	struct ap1302_sensor sensors[2];
+ 
+@@ -491,6 +505,11 @@ enum ap1302_v4l2_ctrls {
+ 	AP1302_CTRL_GAIN
+ };
+ 
++enum ap1302_v4l2_ctrls_addon {
++	AP1302_CTRL_AF_MODE = 0,
++	AP1302_CTRL_AF_ABS
++};
++
+ #define MAX_FW_LOAD_RETRIES 3
+ 
+ static const struct ap1302_format_info supported_video_formats[] = {
+@@ -546,8 +565,8 @@ static const struct ap1302_sensor_info ap1302_sensor_info[] = {
+ 		.name = "ar1335",
+ 		.i2c_addr = 0x36,
+ 		.resolution = { 1280, 720},
+-		.fps = 20,
+-		.format = MEDIA_BUS_FMT_UYVY8_2X8,
++		.fps = 15,
++		.format = MEDIA_BUS_FMT_RGB565_2X8_LE,
+ 		.supplies = (const struct ap1302_sensor_supply[]) {
+ 			{ "vaa", 0 },
+ 			{ "vddio", 0 },
+@@ -1317,9 +1336,51 @@ static int ap1302_configure(struct ap1302_device *ap1302)
+ 	return 0;
+ }
+ 
++/*
++ * ap1302_set_mipi_color_order() - fix color order issues in the MIPI lines
++ *
++ * This function fixes the color order issue seen during RGB streaming in the
++ * MIPI lines
++ */
++static int ap1302_set_mipi_color_order(struct ap1302_device *ap1302)
++{
++	int ret = 0;
++	u32 mipi_fix = 0x00000004, val;
++	u16 frame1, frame2, cnt;
++
++	ret = ap1302_read(ap1302, AP1302_FRAME_CNT, &val);
++	if (ret < 0)
++		return ret;
++
++	frame1 = val >> 8;
++
++	/* wait some frames 1st */
++	for (cnt = 0 ; cnt < 50; cnt++) {
++		val = 0x00000000;
++		ret = ap1302_read(ap1302, AP1302_FRAME_CNT, &val);
++		if (ret < 0)
++			return ret;
++
++		frame2 = val >> 8;
++
++		if (((frame2 - frame1) & 0xff) > 10) {
++			/* fix MIPI color order */
++			ret = ap1302_write(ap1302, AP1302_ADV_MIPI_FIX, mipi_fix, NULL);
++			if (ret < 0)
++				return ret;
++			break;
++		}
++
++		msleep(100);
++	}
++
++	return ret;
++}
++
+ static int ap1302_stall(struct ap1302_device *ap1302, bool stall)
+ {
+ 	int ret = 0;
++	const struct ap1302_format *format = &ap1302->formats[AP1302_PAD_SOURCE];
+ 
+ 	if (stall) {
+ 		ap1302_write(ap1302, AP1302_SYS_START,
+@@ -1345,11 +1406,19 @@ static int ap1302_stall(struct ap1302_device *ap1302, bool stall)
+ 
+ 	} else {
+ 		ap1302->streaming = true;
+-		return ap1302_write(ap1302, AP1302_SYS_START,
+-				    AP1302_SYS_START_PLL_LOCK |
+-				    AP1302_SYS_START_STALL_STATUS |
+-				    AP1302_SYS_START_STALL_EN |
+-				    AP1302_SYS_START_STALL_MODE_DISABLED, NULL);
++		ret = ap1302_write(ap1302, AP1302_SYS_START,
++				   AP1302_SYS_START_PLL_LOCK |
++				   AP1302_SYS_START_STALL_STATUS |
++				   AP1302_SYS_START_STALL_EN |
++				   AP1302_SYS_START_STALL_MODE_DISABLED, NULL);
++		if (ret < 0)
++			return ret;
++		if (format->info->code == MEDIA_BUS_FMT_RGB565_2X8_LE) {
++			ret = ap1302_set_mipi_color_order(ap1302);
++			if (ret < 0)
++				return ret;
++		}
++		return ret;
+ 	}
+ }
+ 
+@@ -1388,6 +1457,11 @@ static u16 ap1302_wb_values[] = {
+ 	AP1302_AWB_CTRL_MODE_AUTO,	/* V4L2_WHITE_BALANCE_AUTO */
+ };
+ 
++static u16 ap1302_af_values[] = {
++	AP1302_AF_CTRL_MODE_MANUAL,
++	AP1302_AF_CTRL_MODE_CONTINUOUS,
++};
++
+ static int ap1302_set_wb_mode(struct ap1302_device *ap1302, s32 mode)
+ {
+ 	u32 val;
+@@ -1443,6 +1517,43 @@ static int ap1302_set_gamma(struct ap1302_device *ap1302, s32 val)
+ 	return ap1302_write(ap1302, AP1302_GAMMA, val, NULL);
+ }
+ 
++static int ap1302_set_auto_focus(struct ap1302_device *ap1302, s32 mode)
++{
++	u32 val;
++	int ret;
++
++	ap1302->v4l2_ctrl_af_manual_mode = (mode != 0) ? false : true;
++
++	ret = ap1302_read(ap1302, AP1302_AF_CTRL, &val);
++	if (ret)
++		return ret;
++
++	val &= ~AP1302_AF_CTRL_MODE_MASK;
++	val |= ap1302_af_values[mode];
++
++	/*
++	 *In manual focus mode disable volatile flag for V4L2_CID_FOCUS_ABSOLUTE
++	 *control to enable set value function
++	 */
++	if (ap1302->v4l2_ctrl_af_manual_mode) {
++		ap1302->auto_focus_abs->flags &= ~(V4L2_CTRL_FLAG_VOLATILE
++						   | V4L2_CTRL_FLAG_READ_ONLY);
++	} else {
++		ap1302->auto_focus_abs->flags |= (V4L2_CTRL_FLAG_VOLATILE
++						  | V4L2_CTRL_FLAG_READ_ONLY);
++	}
++
++	return ap1302_write(ap1302, AP1302_AF_CTRL, val, NULL);
++}
++
++static int ap1302_set_absolute_focus(struct ap1302_device *ap1302, s32 val)
++{
++	if (ap1302->v4l2_ctrl_af_manual_mode)
++		return ap1302_write(ap1302, AP1302_ABSOLUTE_AF_CTRL, val, NULL);
++	else
++		return -EBADRQC;
++}
++
+ static int ap1302_s_ctrl(struct v4l2_ctrl *ctrl)
+ {
+ 	struct ap1302_device *ap1302 =
+@@ -1472,12 +1583,47 @@ static int ap1302_s_ctrl(struct v4l2_ctrl *ctrl)
+ 	case V4L2_CID_LINK_FREQ:
+ 		return 0;
+ 
++	case V4L2_CID_FOCUS_AUTO:
++		return ap1302_set_auto_focus(ap1302, ctrl->val);
++
++	case V4L2_CID_FOCUS_ABSOLUTE:
++		return ap1302_set_absolute_focus(ap1302, ctrl->val);
++
++	default:
++		return -EINVAL;
++	}
++}
++
++/*
++ * ap1302_g_ctrls() - reads the v4l2 control related register values from
++ *                    AP1302 register everytime when volatile flag is set
++ *
++ * Focus absolute is a dynamically changing value when the Auto focus mode
++ * is selected, hence everytime the value read for this control from the
++ * userspace, the value has to be updated from the AP1302 register.
++ */
++static int ap1302_g_ctrl(struct v4l2_ctrl *ctrl)
++{
++	u32 val;
++	int ret;
++	struct ap1302_device *ap1302 =
++		container_of(ctrl->handler, struct ap1302_device, ctrls);
++
++	switch (ctrl->id) {
++	case V4L2_CID_FOCUS_ABSOLUTE:
++		ret = ap1302_read(ap1302, AP1302_ABSOLUTE_AF_CTRL, &val);
++		if (ret)
++			return ret;
++		ctrl->val = val;
++		return ret;
++
+ 	default:
+ 		return -EINVAL;
+ 	}
+ }
+ 
+ static const struct v4l2_ctrl_ops ap1302_ctrl_ops = {
++	.g_volatile_ctrl = ap1302_g_ctrl,
+ 	.s_ctrl = ap1302_s_ctrl,
+ };
+ 
+@@ -1545,6 +1691,24 @@ static struct v4l2_ctrl_config ap1302_ctrls[] = {
+ 	},
+ };
+ 
++static struct v4l2_ctrl_config ap1302_ctrls_addon[] = {
++	{
++		.ops = &ap1302_ctrl_ops,
++		.id = V4L2_CID_FOCUS_AUTO,
++		.type = V4L2_CTRL_TYPE_BOOLEAN,
++		.min = 0,
++		.max = 1,
++		.step = 1,
++	}, {
++		.ops = &ap1302_ctrl_ops,
++		.id = V4L2_CID_FOCUS_ABSOLUTE,
++		.type = V4L2_CTRL_TYPE_INTEGER,
++		.min = 0x00,
++		.max = 0xFF,
++		.step = 0x01,
++	}
++};
++
+ /*
+  * ap1302_get_ctrls() - reads the v4l2 control related register values from
+  *                      AP1302
+@@ -1617,25 +1781,68 @@ static int ap1302_get_ctrls(struct ap1302_device *ap1302)
+ 	val = (val != AP1302_AWB_CTRL_MODE_AUTO) ? AWB_MODE_0 : AWB_MODE_1;
+ 	ap1302_ctrls[AP1302_CTRL_WB].def = val;
+ 
++	if (!strcmp(ap1302->sensor_info->model, AR1335_MODEL)) {
++		/* get the Auto focus mode value from AP1302 */
++		val = 0x00000000;
++		ret = ap1302_read(ap1302, AP1302_AF_CTRL, &val);
++		if (ret < 0)
++			return ret;
++
++		/* start the Auto focus mode always with continuos mode in the begening */
++		if ((val & AP1302_AF_CTRL_MODE_MASK) != AP1302_AF_CTRL_MODE_CONTINUOUS) {
++			val &= ~AP1302_AF_CTRL_MODE_MASK;
++			val |= AP1302_AF_CTRL_MODE_CONTINUOUS;
++			ret = ap1302_write(ap1302, AP1302_AF_CTRL, val, NULL);
++			if (ret < 0)
++				return ret;
++		}
++		ap1302_ctrls_addon[AP1302_CTRL_AF_MODE].def = AF_MODE_1;
++		ap1302->v4l2_ctrl_af_manual_mode = false;
++
++		/* get the Auto focus absolute value from AP1302 */
++		val = 0x00000000;
++		ret = ap1302_read(ap1302, AP1302_ABSOLUTE_AF_CTRL, &val);
++		if (ret < 0)
++			return ret;
++
++		ap1302_ctrls_addon[AP1302_CTRL_AF_ABS].def = val;
++	}
+ 	return ret;
+ }
+ 
+ static int ap1302_ctrls_init(struct ap1302_device *ap1302)
+ {
+-	unsigned int i;
++	unsigned int i, num_v4l2ctrls;
+ 	int ret;
+ 
+ 	ret = ap1302_get_ctrls(ap1302);
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = v4l2_ctrl_handler_init(&ap1302->ctrls, ARRAY_SIZE(ap1302_ctrls));
++	num_v4l2ctrls = ARRAY_SIZE(ap1302_ctrls);
++
++	if (!strcmp(ap1302->sensor_info->model, AR1335_MODEL))
++		num_v4l2ctrls += ARRAY_SIZE(ap1302_ctrls_addon);
++
++	ret = v4l2_ctrl_handler_init(&ap1302->ctrls, num_v4l2ctrls);
+ 	if (ret)
+ 		return ret;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(ap1302_ctrls); i++)
+ 		v4l2_ctrl_new_custom(&ap1302->ctrls, &ap1302_ctrls[i], NULL);
+ 
++	/* Add on v4l2 controls are supported only for few camera sensors*/
++	if (!strcmp(ap1302->sensor_info->model, AR1335_MODEL)) {
++		ap1302->auto_focus_mode = v4l2_ctrl_new_custom(&ap1302->ctrls,
++							       &ap1302_ctrls_addon[0],
++							       NULL);
++		ap1302->auto_focus_abs = v4l2_ctrl_new_custom(&ap1302->ctrls,
++							      &ap1302_ctrls_addon[1],
++							      NULL);
++		ap1302->auto_focus_abs->flags |= (V4L2_CTRL_FLAG_VOLATILE
++						  | V4L2_CTRL_FLAG_READ_ONLY);
++	}
++
+ 	if (ap1302->ctrls.error) {
+ 		ret = ap1302->ctrls.error;
+ 		v4l2_ctrl_handler_free(&ap1302->ctrls);
+-- 
+2.17.1
+

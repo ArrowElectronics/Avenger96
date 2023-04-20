@@ -1,0 +1,42 @@
+From d5fca0035c5ac56614a43300fbc4da3b94f2e122 Mon Sep 17 00:00:00 2001
+From: Anil Dsouza <anil.dsouza@einfochips.com>
+Date: Fri, 4 Mar 2022 15:46:11 +0530
+Subject: [PATCH 07/11] arch: arm: configs: Enable AP1302 by default for AV96
+
+* This patch enables AP1302 by default as loadable module for AV96.
+* This patch will make ST mipid02 as loadable module.
+* This patch will also increase CMA size from 64 to 128 MB to avoid the
+  error in the continous stream from the camera to the HDMI Display.
+
+Change-Id: If1af7215736b4d9f92eca80dd9c0e85e341b0f21
+Signed-off-by: Anil Dsouza <anil.dsouza@einfochips.com>
+---
+ arch/arm/configs/stm32mp1_dhsom_defconfig | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/stm32mp1_dhsom_defconfig b/arch/arm/configs/stm32mp1_dhsom_defconfig
+index f594e8bbc..22522f5de 100644
+--- a/arch/arm/configs/stm32mp1_dhsom_defconfig
++++ b/arch/arm/configs/stm32mp1_dhsom_defconfig
+@@ -262,7 +262,8 @@ CONFIG_V4L_PLATFORM_DRIVERS=y
+ CONFIG_VIDEO_STM32_DCMI=y
+ # CONFIG_MEDIA_SUBDRV_AUTOSELECT is not set
+ CONFIG_VIDEO_OV5640=y
+-CONFIG_VIDEO_ST_MIPID02=y
++CONFIG_VIDEO_ST_MIPID02=m
++CONFIG_VIDEO_AP1302=m
+ CONFIG_DRM=y
+ CONFIG_DRM_LVDS_CODEC=y
+ CONFIG_DRM_STM=y
+@@ -464,7 +465,7 @@ CONFIG_CRYPTO_ZSTD=y
+ # CONFIG_CRYPTO_DEV_VIRTIO is not set
+ CONFIG_CRC_CCITT=y
+ CONFIG_CRC4=y
+-CONFIG_CMA_SIZE_MBYTES=64
++CONFIG_CMA_SIZE_MBYTES=128
+ CONFIG_PRINTK_TIME=y
+ CONFIG_MAGIC_SYSRQ=y
+ CONFIG_DEBUG_KERNEL=y
+-- 
+2.17.1
+

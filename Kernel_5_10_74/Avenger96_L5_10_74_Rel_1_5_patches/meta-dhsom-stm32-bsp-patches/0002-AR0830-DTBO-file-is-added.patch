@@ -1,0 +1,24 @@
+From ad07e48ee15f4d2dbab394fe45afbd87a4a69d02 Mon Sep 17 00:00:00 2001
+From: Deepak Rathore <deepak.rathore@einfochips.com>
+Date: Wed, 19 Apr 2023 13:04:22 +0530
+Subject: [PATCH] AR0830 DTBO file is added
+
+stm32mp15xx-avenger96-overlay-ap1302-ar0830.dtbo
+
+Signed-off-by: Deepak Rathore <deepak.rathore@einfochips.com>
+
+diff --git a/conf/machine/dh-stm32mp1-dhcor-avenger96.conf b/conf/machine/dh-stm32mp1-dhcor-avenger96.conf
+index 6d5c9e6..fc866c4 100644
+--- a/conf/machine/dh-stm32mp1-dhcor-avenger96.conf
++++ b/conf/machine/dh-stm32mp1-dhcor-avenger96.conf
+@@ -22,6 +22,7 @@ KERNEL_DEVICETREE = " \
+ 	stm32mp15xx-avenger96-overlay-ap1302-arx3a0.dtbo \
+ 	stm32mp15xx-avenger96-overlay-ap1302-ar0430.dtbo \
+ 	stm32mp15xx-avenger96-overlay-ap1302-ar1335.dtbo \
++	stm32mp15xx-avenger96-overlay-ap1302-ar0830.dtbo \
+ 	"
+ 
+ # Ship kernel modules
+-- 
+2.17.1
+

@@ -36,17 +36,17 @@ $ repo sync
 - apply patches
 $ cd dhcom-yocto-bsp/sources/
 
-$ cp -r ../../Avenger96_L5_10_74_Rel_1_4_patches/meta-einfochips-ap1302/ .
+$ cp -r ../../Avenger96_L5_10_74_Rel_1_5_patches/meta-einfochips-ap1302/ .
 
 $ cd meta-dhsom-stm32-common/
 
-$ git am ../../../Avenger96_L5_10_74_Rel_1_4_patches/meta-dhsom-stm32-common-patches/000*
+$ git am ../../../Avenger96_L5_10_74_Rel_1_5_patches/meta-dhsom-stm32-common-patches/000*
 
 $ cd ../
 
 $ cd meta-dhsom-stm32-bsp/
 
-$ git am ../../../Avenger96_L5_10_74_Rel_1_4_patches/meta-dhsom-stm32-bsp-patches/00*
+$ git am ../../../Avenger96_L5_10_74_Rel_1_5_patches/meta-dhsom-stm32-bsp-patches/00*
 
 $ cd ../../
 
